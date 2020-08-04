@@ -8,11 +8,15 @@ from typing import (
     Callable, List, Dict, Any
 )
 
+proxies = {
+    'http': '81.95.13.254:5836'
+}
+
 class InstaUser(object):
     ''' Get all data about instagarm account '''
     def __init__(self, account: str) -> None:
         base_url = 'https://instagram.com'
-        request = requests.get(f'{base_url}/{account}/?__a=1')
+        request = requests.get(f'{base_url}/{account}/?__a=1', proxies=proxies)
         self.account = account
         self.data = json.loads(request.text)['graphql']['user']
 
@@ -43,7 +47,7 @@ class InstaUser(object):
 
 class Post(object):
     def __init__(self, url: str) -> None:
-        request = requests.get(f'{url}/?__a=1') # https://www.instagram.com/p/{code}/?__a=1
+        request = requests.get(f'{url}/?__a=1', proxies=proxies) # https://www.instagram.com/p/{code}/?__a=1
         self.data = json.loads(request.text)['graphql']['shortcode_media']
 
         self.id = self.data['id']
@@ -90,10 +94,10 @@ class Post(object):
 
     @staticmethod
     def generate_post(account: str) -> Dict[str, str]:
-        request = requests.get(f'https://www.instagram.com/{account}/?__a=1')
+        request = requests.get(f'https://www.instagram.com/{account}/?__a=1', proxies=proxies)
         user_id = json.loads(request.text)['graphql']['user']['id']
         request_url = f'https://www.instagram.com/graphql/query/?query_id=17888483320059182&id={user_id}&first=294'
-        request = json.loads(requests.get(request_url).text)
+        request = json.loads(requests.get(request_url, proxies=proxies).text)
 
         data = request['data']['user']['edge_owner_to_timeline_media']
         end_cursor = data['page_info']['end_cursor']
@@ -102,7 +106,7 @@ class Post(object):
             yield Post.__get_data(post)
 
         while data['page_info']['has_next_page']:
-            request = requests.get(f'{request_url}&after={end_cursor}')
+            request = requests.get(f'{request_url}&after={end_cursor}', proxies=proxies)
             data = json.loads(request.text)['data']['user']['edge_owner_to_timeline_media']
 
             for post in data['edges']:
@@ -138,12 +142,11 @@ def get_date(date_str: str) -> datetime.date:
 
 # def for bot
 def filter_by_date(posts, _from: str,  _to: str):
-	_from, _to = get_date(_from), get_date(_to)
-	filter_post = [
-		post for post in posts if _from >= post['date'] >= _to
-	]
+    _from, _to = get_date(_from), get_date(_to)
 
-	return filter_post
+    return [
+        post for post in posts if _from >= get_date(post['date']) >= _to
+    ]
 
 def sort(posts = None, by: str = None): # sort(posts, by = 'likes')
     sort_by = 'comment_count' if by == 'comments' else 'likes_count'
