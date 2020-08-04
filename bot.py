@@ -72,46 +72,45 @@ async def process_callback_button(callback_query: types.CallbackQuery):
 async def likes(message: types.Message):
 	arguments = message.get_args().split()
 	if arguments:
-		try:
-			await bot.send_message(message.from_user.id, "Processing...")
+	
+		await bot.send_message(message.from_user.id, "Processing...")
 
-			user = InstaUser(arguments[0])
+		user = InstaUser(arguments[0])
 
-			if user.is_public:
-				if len(arguments) == 1:
-					posts = sort(get_posts(user.account), by = 'likes')
-				else:
-					posts = filter_by_date(sort(get_posts(user.account),\
-					by = 'likes'), _from = arguments[1], _to = arguments[3])
-
-				for post in posts[:10]:
-					try:
-						media = list(map(lambda x: types.InputMediaPhoto(x), post['images']))
-
-						media[-1] = types.InputMediaPhoto(post['images'][-1], caption = \
-							message_text.format(post['description'],
-							post['likes_count'], post['comment_count'], post['post_url']))
-
-						await bot.send_media_group(message.from_user.id, media)
-					except:
-						pass
-
-				if len(arguments) == 1:
-					inline_btn = types.InlineKeyboardButton('Show more', \
-					callback_data = f"{user.account} likes 10")
-				else:
-					inline_btn = types.InlineKeyboardButton('Show more', \
-					 callback_data = f"{user.account} likes 10 {arguments[1]} {arguments[3]}")
-
-				inline = types.InlineKeyboardMarkup(row_width = 2).add(inline_btn)
-				await message.answer("Press the button to show more", reply_markup = inline)
-
+		if user.is_public:
+			if len(arguments) == 1:
+				posts = sort(get_posts(user.account), by = 'likes')
 			else:
-				lang = 1 if message.from_user.language_code == 'ru' else 0
+				posts = filter_by_date(sort(get_posts(user.account),\
+				by = 'likes'), _from = arguments[1], _to = arguments[3])
 
-				await message.answer(text['private'][lang])
-		except:
-			await bot.send_message(message.from_user.id, "Account does not exist!")
+			for post in posts[:10]:
+				try:
+					media = list(map(lambda x: types.InputMediaPhoto(x), post['images']))
+
+					media[-1] = types.InputMediaPhoto(post['images'][-1], caption = \
+						message_text.format(post['description'],
+						post['likes_count'], post['comment_count'], post['post_url']))
+
+					await bot.send_media_group(message.from_user.id, media)
+				except:
+					pass
+
+			if len(arguments) == 1:
+				inline_btn = types.InlineKeyboardButton('Show more', \
+				callback_data = f"{user.account} likes 10")
+			else:
+				inline_btn = types.InlineKeyboardButton('Show more', \
+				 callback_data = f"{user.account} likes 10 {arguments[1]} {arguments[3]}")
+
+			inline = types.InlineKeyboardMarkup(row_width = 2).add(inline_btn)
+			await message.answer("Press the button to show more", reply_markup = inline)
+
+		else:
+			lang = 1 if message.from_user.language_code == 'ru' else 0
+
+			await message.answer(text['private'][lang])
+	
 
 @dp.message_handler(commands = ['comments'])
 async def comments(message: types.Message):
